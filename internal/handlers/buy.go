@@ -30,7 +30,7 @@ func (h *BuyHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 	itemName := mux.Vars(r)["item"]
 
 	// Выполняем покупку
-	if err := h.buyUseCase.BuyItem(userID, itemName); err != nil {
+	if err := h.buyUseCase.BuyItem(r.Context(), userID, itemName); err != nil {
 		slog.Error("Failed to buy item", "userID", userID, "item", itemName, "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

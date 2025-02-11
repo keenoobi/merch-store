@@ -1,17 +1,24 @@
 internal/entity/
 !internal/entity/user.go
 !internal/entity/item.go
+!internal/entity/transaction.go
 
 internal/handlers/
 !internal/handlers/auth.go
 !internal/handlers/buy.go
+!internal/handlers/send_coin.go
 
 internal/repository/
 !internal/repository/user.go
 !internal/repository/item.go
+!internal/repository/db.go
+!internal/repository/transaction.go
 
 internal/usecase/
 !internal/usecase/auth.go
 !internal/usecase/buy.go
+!internal/usecase/send_coin.go
 
 token.sh
+
+migrations/

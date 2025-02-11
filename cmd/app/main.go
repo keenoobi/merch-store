@@ -35,11 +35,20 @@ func main() {
 	}
 	defer db.Close()
 
-	// Инициализируем репозиторий, usecase и handler
+	// Инициализируем репозитории
 	userRepo := repository.NewUserRepository(db)
 	itemRepo := repository.NewItemRepository(db)
+	transactionRepo := repository.NewTransactionRepository(db)
+
+	// Инициализируем usecases
 	authUseCase := usecase.NewAuthUseCase(userRepo)
+	buyUseCase := usecase.NewBuyUseCase(userRepo, itemRepo)
+	sendCoinUseCase := usecase.NewSendCoinUseCase(userRepo, transactionRepo)
+
+	// Инициализируем handlers
 	authHandler := handlers.NewAuthHandler(authUseCase)
+	buyHandler := handlers.NewBuyHandler(buyUseCase)
+	sendCoinHandler := handlers.NewSendCoinHandler(sendCoinUseCase)
 
 	// Настраиваем роутер
 	r := mux.NewRouter()
@@ -48,17 +57,15 @@ func main() {
 		w.Write([]byte("OK"))
 	}).Methods("GET")
 
-	authRouter := r.PathPrefix("/api/auth").Subrouter()
-
 	// Регистрируем эндпоинт для аутентификации
+	authRouter := r.PathPrefix("/api/auth").Subrouter()
 	authRouter.HandleFunc("", authHandler.Authenticate).Methods(http.MethodPost)
 
-	buyUseCase := usecase.NewBuyUseCase(userRepo, itemRepo)
-	buyHandler := handlers.NewBuyHandler(buyUseCase)
-
+	// Регистрируем защищенные эндпоинты
 	apiRouter := r.PathPrefix("/api").Subrouter()
 	apiRouter.Use(auth.AuthMiddleware)
 	apiRouter.HandleFunc("/buy/{item}", buyHandler.BuyItem).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/send-coin", sendCoinHandler.SendCoins).Methods(http.MethodPost)
 
 	// Запускаем сервер
 	serverPort := cfg.ServerPort

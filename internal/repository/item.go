@@ -8,15 +8,23 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ItemRepository struct {
-	db *pgxpool.Pool
+	db DB
 }
 
-func NewItemRepository(db *pgxpool.Pool) *ItemRepository {
+func NewItemRepository(db DB) *ItemRepository {
 	return &ItemRepository{db: db}
+}
+
+// WithTx создает новый репозиторий, работающий в рамках транзакции
+func ItemRepoWithTx(tx pgx.Tx) *ItemRepository {
+	return NewItemRepository(tx)
+}
+
+func (r *ItemRepository) Begin(ctx context.Context) (pgx.Tx, error) {
+	return r.db.Begin(ctx)
 }
 
 // GetItemByName возвращает товар по названию

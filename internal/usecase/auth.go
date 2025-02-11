@@ -21,8 +21,8 @@ func NewAuthUseCase(userRepo UserRepository) *AuthUseCase {
 	return &AuthUseCase{userRepo: userRepo}
 }
 
-func (uc *AuthUseCase) Authenticate(username, password string) (*entity.User, error) {
-	user, err := uc.userRepo.GetUserByUsername(context.Background(), username)
+func (uc *AuthUseCase) Authenticate(ctx context.Context, username, password string) (*entity.User, error) {
+	user, err := uc.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
 		slog.Error("Failed to get user by username", "username", username, "error", err)
 		return nil, err
@@ -39,7 +39,7 @@ func (uc *AuthUseCase) Authenticate(username, password string) (*entity.User, er
 			PasswordHash: string(hashedPassword),
 			Coins:        1000, // TODO: Вынести в кофиг, или просто const?
 		}
-		if err := uc.userRepo.Create(context.Background(), user); err != nil {
+		if err := uc.userRepo.Create(ctx, user); err != nil {
 			slog.Error("Failed to create user", "username", username, "error", err)
 			return nil, err
 		}

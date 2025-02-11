@@ -11,7 +11,9 @@ CREATE TABLE merch_items (
     name VARCHAR(50) PRIMARY KEY,
     price INT NOT NULL CHECK (price > 0)
 );
+--
 TRUNCATE merch_items;
+-- Добавляем мерч в таблицу
 INSERT INTO merch_items (name, price)
 VALUES ('t-shirt', 80),
     ('cup', 20),
@@ -35,7 +37,6 @@ CREATE TABLE transfer_history (
     from_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     to_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     amount INT NOT NULL CHECK (amount > 0),
-    timestamp TIMESTAMP DEFAULT NOW(),
     CHECK (from_user_id <> to_user_id)
 );
 -- Индексы для ускорения поиска

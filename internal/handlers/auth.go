@@ -29,7 +29,7 @@ func (h *AuthHandler) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.authUseCase.Authenticate(req.Username, req.Password)
+	user, err := h.authUseCase.Authenticate(r.Context(), req.Username, req.Password)
 	if err != nil {
 		slog.Error("Authentication failed", "error", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

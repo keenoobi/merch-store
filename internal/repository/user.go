@@ -8,15 +8,23 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepository struct {
-	db *pgxpool.Pool
+	db DB
 }
 
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+func NewUserRepository(db DB) *UserRepository {
 	return &UserRepository{db: db}
+}
+
+// WithTx создает новый репозиторий, работающий в рамках транзакции
+func UserRepoWithTx(tx pgx.Tx) *UserRepository {
+	return NewUserRepository(tx)
+}
+
+func (r *UserRepository) Begin(ctx context.Context) (pgx.Tx, error) {
+	return r.db.Begin(ctx)
 }
 
 func (r *UserRepository) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {

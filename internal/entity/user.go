@@ -8,5 +8,5 @@ type User struct {
 	ID           uuid.UUID `json:"id"`
 	Username     string    `json:"username"`
 	PasswordHash string    `json:"-"`
-	Coins        int       `json:"coins"`
+	Coins        int       `json:"coins"` // TODO: Поменять на balance?
 }
