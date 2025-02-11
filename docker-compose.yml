@@ -16,6 +16,14 @@ services:
     restart: always
     networks:
       - internal
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+        - action: rebuild
+          path: .
+          target: /app
 
   db:
     image: postgres:13
