@@ -13,6 +13,7 @@ import (
 	"avito-merch/internal/handlers"
 	"avito-merch/internal/repository"
 	"avito-merch/internal/usecase"
+	"avito-merch/pkg/auth"
 	"avito-merch/pkg/database"
 
 	"github.com/gorilla/mux"
@@ -36,6 +37,7 @@ func main() {
 
 	// Инициализируем репозиторий, usecase и handler
 	userRepo := repository.NewUserRepository(db)
+	itemRepo := repository.NewItemRepository(db)
 	authUseCase := usecase.NewAuthUseCase(userRepo)
 	authHandler := handlers.NewAuthHandler(authUseCase)
 
@@ -46,8 +48,17 @@ func main() {
 		w.Write([]byte("OK"))
 	}).Methods("GET")
 
+	authRouter := r.PathPrefix("/api/auth").Subrouter()
+
 	// Регистрируем эндпоинт для аутентификации
-	r.HandleFunc("/api/auth", authHandler.Authenticate).Methods("POST")
+	authRouter.HandleFunc("", authHandler.Authenticate).Methods(http.MethodPost)
+
+	buyUseCase := usecase.NewBuyUseCase(userRepo, itemRepo)
+	buyHandler := handlers.NewBuyHandler(buyUseCase)
+
+	apiRouter := r.PathPrefix("/api").Subrouter()
+	apiRouter.Use(auth.AuthMiddleware)
+	apiRouter.HandleFunc("/buy/{item}", buyHandler.BuyItem).Methods(http.MethodGet)
 
 	// Запускаем сервер
 	serverPort := cfg.ServerPort

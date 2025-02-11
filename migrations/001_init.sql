@@ -11,7 +11,18 @@ CREATE TABLE merch_items (
     name VARCHAR(50) PRIMARY KEY,
     price INT NOT NULL CHECK (price > 0)
 );
--- Таблица инвентаря пользователя
+TRUNCATE merch_items;
+INSERT INTO merch_items (name, price)
+VALUES ('t-shirt', 80),
+    ('cup', 20),
+    ('book', 50),
+    ('pen', 10),
+    ('powerbank', 200),
+    ('hoody', 300),
+    ('umbrella', 200),
+    ('socks', 10),
+    ('wallet', 50),
+    ('pink-hoody', 500);
 CREATE TABLE inventory (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     item_name VARCHAR(50) REFERENCES merch_items(name) ON DELETE CASCADE,
