@@ -12,6 +12,6 @@ type InventoryItem struct {
 }
 
 type CoinHistory struct {
-	Received []InfoTransaction `json:"received"`
-	Sent     []InfoTransaction `json:"sent"`
+	Received []Transaction `json:"received"`
+	Sent     []Transaction `json:"sent"`
 }

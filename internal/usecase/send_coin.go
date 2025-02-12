@@ -6,8 +6,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-
-	"github.com/google/uuid"
 )
 
 type SendCoinUseCase struct {
@@ -20,7 +18,7 @@ func NewSendCoinUseCase(userRepo *repository.UserRepository, transactionRepo *re
 }
 
 // SendCoins выполняет перевод монет
-func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUserID uuid.UUID, toUsername string, amount int) error {
+func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUsername string, toUsername string, amount int) error {
 	if amount <= 0 {
 		return fmt.Errorf("amount must be positive: %d", amount)
 	}
@@ -44,19 +42,19 @@ func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUserID uuid.UUID, 
 	}
 
 	// Получаем отправителя
-	fromUser, err := userRepo.GetUserByID(ctx, fromUserID)
+	fromUser, err := userRepo.GetUserByUsername(ctx, fromUsername)
 	if err != nil {
 		return fmt.Errorf("failed to get sender: %w", err)
 	}
 
 	// TODO: Не знаю куда это лучше сделать?
-	if toUser.Username == fromUser.Username {
-		return fmt.Errorf("wrong coins recipient: %s", toUser.Username)
+	if toUser.Name == fromUser.Name {
+		return fmt.Errorf("wrong coins recipient: %s", toUser.Name)
 	}
 
 	// Проверяем баланс
 	if fromUser.Coins < amount {
-		return fmt.Errorf("insufficient coins: userID=%s, amount=%d", fromUserID, amount)
+		return fmt.Errorf("insufficient coins: UserName=%s, amount=%d", fromUsername, amount)
 	}
 
 	// Обновляем балансы
@@ -72,9 +70,9 @@ func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUserID uuid.UUID, 
 
 	// Создаем запись о переводе
 	transfer := &entity.Transaction{
-		FromUserID: fromUserID,
-		ToUserID:   toUser.ID,
-		Amount:     amount,
+		FromUser: fromUsername,
+		ToUser:   toUser.Name,
+		Amount:   amount,
 	}
 	if err := transactionRepo.CreateTransfer(ctx, transfer); err != nil {
 		return fmt.Errorf("failed to create transfer record: %w", err)
@@ -84,6 +82,6 @@ func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUserID uuid.UUID, 
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	slog.Info("Coins transferred successfully", "fromUserID", fromUserID, "toUserID", toUser.ID, "amount", amount)
+	slog.Info("Coins transferred successfully", "fromUserName", fromUsername, "toUserName", toUser.Name, "amount", amount)
 	return nil
 }

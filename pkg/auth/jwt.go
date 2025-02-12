@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 var (
@@ -14,14 +13,14 @@ var (
 )
 
 type Claims struct {
-	UserID uuid.UUID `json:"user_id"`
+	Username string `json:"user_name"`
 	jwt.RegisteredClaims
 }
 
 // Создает JWT-токен
-func GenerateToken(userID uuid.UUID) (string, error) {
+func GenerateToken(userName string) (string, error) {
 	claims := Claims{
-		UserID: userID,
+		Username: userName,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // TODO:Заменить магическое число 24!!!
 		},

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -51,15 +50,15 @@ func (r *ItemRepository) GetItemByName(ctx context.Context, name string) (*entit
 }
 
 // AddToInventory добавляет товар в инвентарь пользователя
-func (r *ItemRepository) AddToInventory(ctx context.Context, userID uuid.UUID, itemName string) error {
-	query := `INSERT INTO inventory (user_id, item_name, quantity) 
-	VALUES ($1, $2, 1) ON CONFLICT (user_id, item_name) DO UPDATE SET quantity = inventory.quantity + 1`
-	_, err := r.db.Exec(ctx, query, userID, itemName)
+func (r *ItemRepository) AddToInventory(ctx context.Context, userName string, itemName string) error {
+	query := `INSERT INTO inventory (user_name, item_name, quantity) 
+	VALUES ($1, $2, 1) ON CONFLICT (user_name, item_name) DO UPDATE SET quantity = inventory.quantity + 1`
+	_, err := r.db.Exec(ctx, query, userName, itemName)
 	if err != nil {
-		slog.Error("Failed to add item to inventory", "userID", userID, "item", itemName, "error", err)
+		slog.Error("Failed to add item to inventory", "userName", userName, "item", itemName, "error", err)
 		return err
 	}
 
-	slog.Info("Item added to inventory", "userID", userID, "item", itemName)
+	slog.Info("Item added to inventory", "userName", userName, "item", itemName)
 	return nil
 }

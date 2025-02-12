@@ -35,7 +35,7 @@ func (uc *AuthUseCase) Authenticate(ctx context.Context, username, password stri
 			return nil, err
 		}
 		user = &entity.User{
-			Username:     username,
+			Name:         username,
 			PasswordHash: string(hashedPassword),
 			Coins:        1000, // TODO: Вынести в кофиг, или просто const?
 		}

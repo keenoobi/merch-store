@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-
-	"github.com/google/uuid"
 )
 
 type BuyUseCase struct {
@@ -19,7 +17,7 @@ func NewBuyUseCase(userRepo *repository.UserRepository, itemRepo *repository.Ite
 }
 
 // BuyItem выполняет покупку товара
-func (uc *BuyUseCase) BuyItem(ctx context.Context, userID uuid.UUID, itemName string) error {
+func (uc *BuyUseCase) BuyItem(ctx context.Context, userName string, itemName string) error {
 	tx, err := uc.itemRepo.Begin(ctx)
 	if err != nil {
 		slog.Error("Failed to begin transactions", "error", err)
@@ -42,28 +40,28 @@ func (uc *BuyUseCase) BuyItem(ctx context.Context, userID uuid.UUID, itemName st
 	}
 
 	// Получаем пользователя
-	user, err := userRepo.GetUserByID(ctx, userID)
+	user, err := userRepo.GetUserByUsername(ctx, userName)
 	if err != nil {
-		slog.Error("Failed to get user", "userID", userID, "error", err)
+		slog.Error("Failed to get user", "userName", userName, "error", err)
 		return err
 	}
 
 	// Проверяем баланс
 	if user.Coins < item.Price {
-		slog.Error("Insufficient coins", "userID", userID, "item", itemName)
+		slog.Error("Insufficient coins", "userName", userName, "item", itemName)
 		return errors.New("insufficient coins")
 	}
 
 	// Обновляем баланс пользователя
 	user.Coins -= item.Price
 	if err := userRepo.UpdateUserCoins(ctx, user); err != nil {
-		slog.Error("Failed to update user balance", "userID", userID, "error", err)
+		slog.Error("Failed to update user balance", "userName", userName, "error", err)
 		return err
 	}
 
 	// Добавляем товар в инвентарь
-	if err := itemRepo.AddToInventory(ctx, userID, itemName); err != nil {
-		slog.Error("Failed to add item to inventory", "userID", userID, "item", itemName, "error", err)
+	if err := itemRepo.AddToInventory(ctx, userName, itemName); err != nil {
+		slog.Error("Failed to add item to inventory", "userName", userName, "item", itemName, "error", err)
 		return err
 	}
 
@@ -72,6 +70,6 @@ func (uc *BuyUseCase) BuyItem(ctx context.Context, userID uuid.UUID, itemName st
 		return err
 	}
 
-	slog.Info("Item purchased successfully", "userID", userID, "item", itemName)
+	slog.Info("Item purchased successfully", "userName", userName, "item", itemName)
 	return nil
 }

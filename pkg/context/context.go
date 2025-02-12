@@ -2,25 +2,23 @@ package context
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 type contextKey string
 
-const userIDKey contextKey = "userID"
+const userNameKey contextKey = "userName"
 
-// WithUserID добавляет userID в контекст
-func WithUserID(ctx context.Context, userID uuid.UUID) context.Context {
-	return context.WithValue(ctx, userIDKey, userID)
+// WithUserName добавляет userName в контекст
+func WithUserName(ctx context.Context, userName string) context.Context {
+	return context.WithValue(ctx, userNameKey, userName)
 }
 
-// GetUserID возвращает userID из контекста
-func GetUserID(ctx context.Context) (uuid.UUID, bool) {
-	value := ctx.Value(userIDKey)
+// GetuserName возвращает userName из контекста
+func GetUserName(ctx context.Context) (string, bool) {
+	value := ctx.Value(userNameKey)
 	if value == nil {
-		return uuid.Nil, false
+		return "", false
 	}
-	userID, ok := value.(uuid.UUID)
-	return userID, ok
+	userName, ok := value.(string)
+	return userName, ok
 }

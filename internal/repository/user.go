@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -30,11 +29,10 @@ func (r *UserRepository) Begin(ctx context.Context) (pgx.Tx, error) {
 
 func (r *UserRepository) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
 	var user entity.User
-	query := `SELECT id, username, password_hash, coins FROM users WHERE username = $1`
+	query := `SELECT username, password_hash, coins FROM users WHERE username = $1`
 
 	err := r.db.QueryRow(ctx, query, username).Scan(
-		&user.ID,
-		&user.Username,
+		&user.Name,
 		&user.PasswordHash,
 		&user.Coins,
 	)
@@ -52,73 +50,56 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 	return &user, nil
 }
 
-func (r *UserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*entity.User, error) {
-	var user entity.User
-	query := `SELECT id, username, password_hash, coins FROM users WHERE id = $1`
-
-	err := r.db.QueryRow(ctx, query, userID).Scan(
-		&user.ID,
-		&user.Username,
-		&user.PasswordHash,
-		&user.Coins,
-	)
-
-	if errors.Is(err, pgx.ErrNoRows) {
-		slog.Info("User not found", "userID", userID)
-		return nil, nil
-	}
-	if err != nil {
-		slog.Error("Failed to get user by userID", "userID", userID, "error", err)
-		return nil, err
-	}
-
-	slog.Info("User retrieved", "userID", userID)
-	return &user, nil
-}
-
 func (r *UserRepository) Create(ctx context.Context, user *entity.User) error {
-	query := `INSERT INTO users (username, password_hash, coins) VALUES ($1, $2, $3) RETURNING id`
-	err := r.db.QueryRow(ctx, query, user.Username, user.PasswordHash, user.Coins).Scan(&user.ID)
+	query := `INSERT INTO users (username, password_hash, coins) VALUES ($1, $2, $3) RETURNING username`
+	err := r.db.QueryRow(ctx, query, user.Name, user.PasswordHash, user.Coins).Scan(&user.Name)
 	if err != nil {
-		slog.Error("Failed to create user", "username", user.Username, "error", err)
+		slog.Error("Failed to create user", "username", user.Name, "error", err)
 		return err
 	}
 
-	slog.Info("User successfully created in db", "username", user.Username)
+	slog.Info("User successfully created in db", "username", user.Name)
 	return nil
 }
 
 // TODO: Может сделать под каждое изменение отдельную функцию? Пока сделал для коинов
 func (r *UserRepository) UpdateUserCoins(ctx context.Context, user *entity.User) error {
-	query := `UPDATE users SET coins = $1 WHERE id = $2`
-	result, err := r.db.Exec(ctx, query, user.Coins, user.ID)
+	query := `UPDATE users SET coins = $1 WHERE username = $2`
+	result, err := r.db.Exec(ctx, query, user.Coins, user.Name)
 	if err != nil {
-		slog.Error("Failed to update user coins", "username", user.Username, "error", err)
+		slog.Error("Failed to update user coins", "username", user.Name, "error", err)
 		return err
 	}
 
 	// Проверяем, что обновление действительно произошло
 	rowsAffected := result.RowsAffected()
 	if rowsAffected == 0 {
-		slog.Error("No rows affected", "username", user.Username)
+		slog.Error("No rows affected", "username", user.Name)
 		return errors.New("no rows affected")
 	}
 
-	slog.Info("User coins successfully updated", "username", user.Username)
+	slog.Info("User coins successfully updated", "username", user.Name)
 	return nil
 }
 
-// internal/repository/user.go
-func (r *UserRepository) GetUserInfo(ctx context.Context, userID uuid.UUID) (*entity.InfoData, error) {
-	// Получаем баланс
-	var coins int
-	err := r.db.QueryRow(ctx, "SELECT coins FROM users WHERE id = $1", userID).Scan(&coins)
+// GetUserBalance возвращает баланс пользователя
+func (r *UserRepository) GetUserBalance(ctx context.Context, username string) (int, error) {
+	var balance int
+	query := `SELECT coins FROM users WHERE username = $1`
+	err := r.db.QueryRow(ctx, query, username).Scan(&balance)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user coins: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, fmt.Errorf("user not found: %s", username)
+		}
+		return 0, fmt.Errorf("failed to get user balance: %w", err)
 	}
+	return balance, nil
+}
 
-	// Получаем инвентарь
-	rows, err := r.db.Query(ctx, "SELECT item_name AS type, quantity FROM inventory WHERE user_id = $1", userID)
+// GetUserInventory возвращает инвентарь пользователя
+func (r *UserRepository) GetUserInventory(ctx context.Context, username string) ([]entity.InventoryItem, error) {
+	query := `SELECT item_name, quantity FROM inventory WHERE user_name = $1`
+	rows, err := r.db.Query(ctx, query, username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user inventory: %w", err)
 	}
@@ -132,55 +113,5 @@ func (r *UserRepository) GetUserInfo(ctx context.Context, userID uuid.UUID) (*en
 		}
 		inventory = append(inventory, item)
 	}
-
-	// Получаем полученные транзакции
-	rows, err = r.db.Query(ctx, `
-        SELECT fu.username AS from_user, th.amount 
-        FROM transfer_history th
-        JOIN users fu ON th.from_user_id = fu.id
-        WHERE th.to_user_id = $1
-    `, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get received transactions: %w", err)
-	}
-	defer rows.Close()
-
-	var received []entity.InfoTransaction
-	for rows.Next() {
-		var transaction entity.InfoTransaction
-		if err := rows.Scan(&transaction.FromUser, &transaction.Amount); err != nil {
-			return nil, fmt.Errorf("failed to scan received transaction: %w", err)
-		}
-		received = append(received, transaction)
-	}
-
-	// Получаем отправленные транзакции
-	rows, err = r.db.Query(ctx, `
-        SELECT tu.username AS to_user, th.amount 
-        FROM transfer_history th
-        JOIN users tu ON th.to_user_id = tu.id
-        WHERE th.from_user_id = $1
-    `, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get sent transactions: %w", err)
-	}
-	defer rows.Close()
-
-	var sent []entity.InfoTransaction
-	for rows.Next() {
-		var transaction entity.InfoTransaction
-		if err := rows.Scan(&transaction.ToUser, &transaction.Amount); err != nil {
-			return nil, fmt.Errorf("failed to scan sent transaction: %w", err)
-		}
-		sent = append(sent, transaction)
-	}
-
-	return &entity.InfoData{
-		Coins:     coins,
-		Inventory: inventory,
-		CoinHistory: entity.CoinHistory{
-			Received: received,
-			Sent:     sent,
-		},
-	}, nil
+	return inventory, nil
 }

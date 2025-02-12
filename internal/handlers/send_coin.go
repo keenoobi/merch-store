@@ -23,8 +23,8 @@ type SendCoinRequest struct {
 
 func (h *SendCoinHandler) SendCoins(w http.ResponseWriter, r *http.Request) {
 	var req SendCoinRequest
-	// Получаем userID из контекста от middleware
-	fromUserID, ok := context.GetUserID(r.Context())
+	// Получаем UserName из контекста от middleware
+	fromUsername, ok := context.GetUserName(r.Context())
 	if !ok {
 		slog.Error("User ID not found in context")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -50,8 +50,8 @@ func (h *SendCoinHandler) SendCoins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выполняем перевод
-	if err := h.sendCoinUseCase.SendCoins(r.Context(), fromUserID, req.ToUser, req.Amount); err != nil {
-		slog.Error("Failed to send coins", "fromUserID", fromUserID, "toUser", req.ToUser, "amount", req.Amount, "error", err)
+	if err := h.sendCoinUseCase.SendCoins(r.Context(), fromUsername, req.ToUser, req.Amount); err != nil {
+		slog.Error("Failed to send coins", "fromUsername", fromUsername, "toUser", req.ToUser, "amount", req.Amount, "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

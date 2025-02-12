@@ -1,4 +1,3 @@
-// internal/handlers/info.go
 package handlers
 
 import (
@@ -18,8 +17,8 @@ func NewInfoHandler(infoUseCase *usecase.InfoUseCase) *InfoHandler {
 }
 
 func (h *InfoHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	// Получаем userID из контекста
-	userID, ok := context.GetUserID(r.Context())
+	// Получаем userName из контекста
+	userName, ok := context.GetUserName(r.Context())
 	if !ok {
 		slog.Error("User ID not found in context")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -27,9 +26,9 @@ func (h *InfoHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем информацию о пользователе
-	info, err := h.infoUseCase.GetUserInfo(r.Context(), userID)
+	info, err := h.infoUseCase.GetUserInfo(r.Context(), userName)
 	if err != nil {
-		slog.Error("Failed to get user info", "userID", userID, "error", err)
+		slog.Error("Failed to get user info", "userName", userName, "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
