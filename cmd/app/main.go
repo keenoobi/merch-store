@@ -44,11 +44,13 @@ func main() {
 	authUseCase := usecase.NewAuthUseCase(userRepo)
 	buyUseCase := usecase.NewBuyUseCase(userRepo, itemRepo)
 	sendCoinUseCase := usecase.NewSendCoinUseCase(userRepo, transactionRepo)
+	infoUseCase := usecase.NewInfoUseCase(userRepo, transactionRepo)
 
 	// Инициализируем handlers
 	authHandler := handlers.NewAuthHandler(authUseCase)
 	buyHandler := handlers.NewBuyHandler(buyUseCase)
 	sendCoinHandler := handlers.NewSendCoinHandler(sendCoinUseCase)
+	infoHandler := handlers.NewInfoHandler(infoUseCase)
 
 	// Настраиваем роутер
 	r := mux.NewRouter()
@@ -66,6 +68,7 @@ func main() {
 	apiRouter.Use(auth.AuthMiddleware)
 	apiRouter.HandleFunc("/buy/{item}", buyHandler.BuyItem).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/send-coin", sendCoinHandler.SendCoins).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/info", infoHandler.GetUserInfo).Methods(http.MethodGet)
 
 	// Запускаем сервер
 	serverPort := cfg.ServerPort

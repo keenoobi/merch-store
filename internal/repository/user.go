@@ -4,6 +4,7 @@ import (
 	"avito-merch/internal/entity"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/google/uuid"
@@ -105,4 +106,81 @@ func (r *UserRepository) UpdateUserCoins(ctx context.Context, user *entity.User)
 
 	slog.Info("User coins successfully updated", "username", user.Username)
 	return nil
+}
+
+// internal/repository/user.go
+func (r *UserRepository) GetUserInfo(ctx context.Context, userID uuid.UUID) (*entity.InfoData, error) {
+	// Получаем баланс
+	var coins int
+	err := r.db.QueryRow(ctx, "SELECT coins FROM users WHERE id = $1", userID).Scan(&coins)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user coins: %w", err)
+	}
+
+	// Получаем инвентарь
+	rows, err := r.db.Query(ctx, "SELECT item_name AS type, quantity FROM inventory WHERE user_id = $1", userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user inventory: %w", err)
+	}
+	defer rows.Close()
+
+	var inventory []entity.InventoryItem
+	for rows.Next() {
+		var item entity.InventoryItem
+		if err := rows.Scan(&item.Type, &item.Quantity); err != nil {
+			return nil, fmt.Errorf("failed to scan inventory item: %w", err)
+		}
+		inventory = append(inventory, item)
+	}
+
+	// Получаем полученные транзакции
+	rows, err = r.db.Query(ctx, `
+        SELECT fu.username AS from_user, th.amount 
+        FROM transfer_history th
+        JOIN users fu ON th.from_user_id = fu.id
+        WHERE th.to_user_id = $1
+    `, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get received transactions: %w", err)
+	}
+	defer rows.Close()
+
+	var received []entity.InfoTransaction
+	for rows.Next() {
+		var transaction entity.InfoTransaction
+		if err := rows.Scan(&transaction.FromUser, &transaction.Amount); err != nil {
+			return nil, fmt.Errorf("failed to scan received transaction: %w", err)
+		}
+		received = append(received, transaction)
+	}
+
+	// Получаем отправленные транзакции
+	rows, err = r.db.Query(ctx, `
+        SELECT tu.username AS to_user, th.amount 
+        FROM transfer_history th
+        JOIN users tu ON th.to_user_id = tu.id
+        WHERE th.from_user_id = $1
+    `, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sent transactions: %w", err)
+	}
+	defer rows.Close()
+
+	var sent []entity.InfoTransaction
+	for rows.Next() {
+		var transaction entity.InfoTransaction
+		if err := rows.Scan(&transaction.ToUser, &transaction.Amount); err != nil {
+			return nil, fmt.Errorf("failed to scan sent transaction: %w", err)
+		}
+		sent = append(sent, transaction)
+	}
+
+	return &entity.InfoData{
+		Coins:     coins,
+		Inventory: inventory,
+		CoinHistory: entity.CoinHistory{
+			Received: received,
+			Sent:     sent,
+		},
+	}, nil
 }

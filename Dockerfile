@@ -8,13 +8,15 @@ COPY go.mod go.sum ./
 
 # Загружаем зависимости с использованием кэша
 RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
     go mod download
 
 # Копируем весь код
 COPY . .
 
 # Собираем приложение
-RUN --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /avito-shop ./cmd/app/main.go
 
 # Stage 2: Финальный контейнер
