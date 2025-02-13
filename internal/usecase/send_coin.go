@@ -23,6 +23,10 @@ func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUsername string, t
 		return fmt.Errorf("amount must be positive: %d", amount)
 	}
 
+	if fromUsername == toUsername {
+		return fmt.Errorf("cannot send coins to yourself: %s", toUsername)
+	}
+
 	tx, err := uc.transactionRepo.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
@@ -32,49 +36,17 @@ func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUsername string, t
 	userRepo := repository.UserRepoWithTx(tx)
 	transactionRepo := repository.TransactionRepoWithTx(tx)
 
-	// Находим в БД получателя получателя
-	toUser, err := userRepo.GetUserByUsername(ctx, toUsername)
-	if err != nil {
-		return fmt.Errorf("failed to get recipient: %w", err)
-	}
-	if toUser == nil {
-		return fmt.Errorf("recipient not found: %s", toUsername)
-	}
-
-	// Получаем отправителя
-	fromUser, err := userRepo.GetUserByUsername(ctx, fromUsername)
-	if err != nil {
-		return fmt.Errorf("failed to get sender: %w", err)
-	}
-
-	// TODO: Не знаю куда это лучше сделать?
-	if toUser.Name == fromUser.Name {
-		return fmt.Errorf("wrong coins recipient: %s", toUser.Name)
-	}
-
-	// Проверяем баланс
-	if fromUser.Coins < amount {
-		return fmt.Errorf("insufficient coins: UserName=%s, amount=%d", fromUsername, amount)
-	}
-
-	// Обновляем балансы
-	fromUser.Coins -= amount
-	toUser.Coins += amount
-
-	if err := userRepo.UpdateUserCoins(ctx, fromUser); err != nil {
+	// Обновляем балансы обоих пользователей
+	if err := userRepo.UpdateUserAfterTransfer(ctx, fromUsername, toUsername, amount); err != nil {
 		return fmt.Errorf("failed to update sender balance: %w", err)
-	}
-	if err := userRepo.UpdateUserCoins(ctx, toUser); err != nil {
-		return fmt.Errorf("failed to update recipient balance: %w", err)
 	}
 
 	// Создаем запись о переводе
-	transfer := &entity.Transaction{
+	if err := transactionRepo.CreateTransfer(ctx, &entity.Transaction{
 		FromUser: fromUsername,
-		ToUser:   toUser.Name,
+		ToUser:   toUsername,
 		Amount:   amount,
-	}
-	if err := transactionRepo.CreateTransfer(ctx, transfer); err != nil {
+	}); err != nil {
 		return fmt.Errorf("failed to create transfer record: %w", err)
 	}
 
@@ -82,6 +54,12 @@ func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUsername string, t
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	slog.Info("Coins transferred successfully", "fromUserName", fromUsername, "toUserName", toUser.Name, "amount", amount)
+	// Логируем успешный перевод
+	slog.Info("Coins transferred successfully",
+		"fromUserName", fromUsername,
+		"toUserName", toUsername,
+		"amount", amount,
+	)
+
 	return nil
 }

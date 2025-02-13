@@ -3,7 +3,7 @@ package usecase
 import (
 	"avito-merch/internal/repository"
 	"context"
-	"errors"
+	"fmt"
 	"log/slog"
 )
 
@@ -18,56 +18,45 @@ func NewBuyUseCase(userRepo *repository.UserRepository, itemRepo *repository.Ite
 
 // BuyItem выполняет покупку товара
 func (uc *BuyUseCase) BuyItem(ctx context.Context, userName string, itemName string) error {
+	// Начинаем транзакцию
 	tx, err := uc.itemRepo.Begin(ctx)
 	if err != nil {
-		slog.Error("Failed to begin transactions", "error", err)
-		return err
+		slog.Error("Failed to begin transaction", "error", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
 	userRepo := repository.UserRepoWithTx(tx)
 	itemRepo := repository.ItemRepoWithTx(tx)
 
-	// Получаем товар
+	// Получаем цену товара
 	item, err := itemRepo.GetItemByName(ctx, itemName)
 	if err != nil {
 		slog.Error("Failed to get item", "item", itemName, "error", err)
-		return err
+		return fmt.Errorf("failed to get item: %w", err)
 	}
 	if item == nil {
 		slog.Error("Item not found", "item", itemName)
-		return errors.New("item not found")
+		return fmt.Errorf("item not found: %s", itemName)
 	}
 
-	// Получаем пользователя
-	user, err := userRepo.GetUserByUsername(ctx, userName)
-	if err != nil {
-		slog.Error("Failed to get user", "userName", userName, "error", err)
-		return err
-	}
+	// Обновляем баланс пользователя с проверкой
 
-	// Проверяем баланс
-	if user.Coins < item.Price {
-		slog.Error("Insufficient coins", "userName", userName, "item", itemName)
-		return errors.New("insufficient coins")
-	}
-
-	// Обновляем баланс пользователя
-	user.Coins -= item.Price
-	if err := userRepo.UpdateUserCoins(ctx, user); err != nil {
+	if err := userRepo.UpdateUserAfterPurchase(ctx, userName, item.Price); err != nil {
 		slog.Error("Failed to update user balance", "userName", userName, "error", err)
-		return err
+		return fmt.Errorf("failed to update user balance: %w", err)
 	}
 
 	// Добавляем товар в инвентарь
 	if err := itemRepo.AddToInventory(ctx, userName, itemName); err != nil {
 		slog.Error("Failed to add item to inventory", "userName", userName, "item", itemName, "error", err)
-		return err
+		return fmt.Errorf("failed to add item to inventory: %w", err)
 	}
 
+	// Коммитим транзакцию
 	if err := tx.Commit(ctx); err != nil {
 		slog.Error("Failed to commit transaction", "error", err)
-		return err
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	slog.Info("Item purchased successfully", "userName", userName, "item", itemName)

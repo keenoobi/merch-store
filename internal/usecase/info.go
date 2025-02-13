@@ -21,7 +21,7 @@ func NewInfoUseCase(userRepo *repository.UserRepository, transactionRepo *reposi
 
 func (uc *InfoUseCase) GetUserInfo(ctx context.Context, username string) (*entity.InfoData, error) {
 	// Получаем баланс пользователя
-	balance, err := uc.userRepo.GetUserBalance(ctx, username)
+	user, err := uc.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user balance: %w", err)
 	}
@@ -40,7 +40,7 @@ func (uc *InfoUseCase) GetUserInfo(ctx context.Context, username string) (*entit
 
 	// Формируем ответ
 	info := &entity.InfoData{
-		Coins:     balance,
+		Coins:     user.Coins,
 		Inventory: inventory,
 		CoinHistory: entity.CoinHistory{
 			Received: uc.filterReceivedTransactions(transactions, username),

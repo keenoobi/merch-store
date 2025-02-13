@@ -62,38 +62,48 @@ func (r *UserRepository) Create(ctx context.Context, user *entity.User) error {
 	return nil
 }
 
-// TODO: Может сделать под каждое изменение отдельную функцию? Пока сделал для коинов
-func (r *UserRepository) UpdateUserCoins(ctx context.Context, user *entity.User) error {
-	query := `UPDATE users SET coins = $1 WHERE username = $2`
-	result, err := r.db.Exec(ctx, query, user.Coins, user.Name)
+// UpdateUserAfterTransfer обновляет балансы пользователей после перевода перевода
+func (r *UserRepository) UpdateUserAfterTransfer(ctx context.Context, fromUsername, toUsername string, amount int) error {
+	query := `
+		UPDATE users 
+		SET coins = CASE 
+			WHEN username = $1 THEN coins - $3 
+			WHEN username = $2 THEN coins + $3 
+			ELSE coins 
+		END
+		WHERE username IN ($1, $2);`
+	result, err := r.db.Exec(ctx, query, fromUsername, toUsername, amount)
 	if err != nil {
-		slog.Error("Failed to update user coins", "username", user.Name, "error", err)
-		return err
+		return fmt.Errorf("failed to update balances: %w", err)
 	}
 
 	// Проверяем, что обновление действительно произошло
 	rowsAffected := result.RowsAffected()
-	if rowsAffected == 0 {
-		slog.Error("No rows affected", "username", user.Name)
-		return errors.New("no rows affected")
+	if rowsAffected != 2 {
+		return fmt.Errorf("expected 2 rows to be updated, got %d", rowsAffected)
 	}
 
-	slog.Info("User coins successfully updated", "username", user.Name)
+	slog.Info("User coins successfully updated", "FromUser", fromUsername, "ToUser", toUsername)
 	return nil
 }
 
-// GetUserBalance возвращает баланс пользователя
-func (r *UserRepository) GetUserBalance(ctx context.Context, username string) (int, error) {
-	var balance int
-	query := `SELECT coins FROM users WHERE username = $1`
-	err := r.db.QueryRow(ctx, query, username).Scan(&balance)
+// UpdateUserAfterPurchase обновляет баланс пользователя с проверкой на достаточность средств
+func (r *UserRepository) UpdateUserAfterPurchase(ctx context.Context, username string, amount int) error {
+	query := `
+        UPDATE users 
+        SET coins = coins - $1 
+        WHERE username = $2 AND coins >= $1;
+    `
+	result, err := r.db.Exec(ctx, query, amount, username)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, fmt.Errorf("user not found: %s", username)
-		}
-		return 0, fmt.Errorf("failed to get user balance: %w", err)
+		return fmt.Errorf("failed to update user balance: %w", err)
 	}
-	return balance, nil
+
+	if result.RowsAffected() != 1 {
+		return fmt.Errorf("insufficient coins or user not found: %s", username)
+	}
+
+	return nil
 }
 
 // GetUserInventory возвращает инвентарь пользователя

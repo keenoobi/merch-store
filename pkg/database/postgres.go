@@ -12,14 +12,9 @@ import (
 
 // NewPostgresDB создаёт подключение к БД через pgx
 func NewPostgresDB(cfg *config.Config) (*pgxpool.Pool, error) {
-	dbHost := cfg.DBHost
-	dbPort := cfg.DBPort
-	dbUser := cfg.DBUser
-	dbPass := cfg.DBPassword
-	dbName := cfg.DBName
-
+	// Составляем строку для к Postgres
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		dbUser, dbPass, dbHost, dbPort, dbName)
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
 
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
