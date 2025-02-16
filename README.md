@@ -29,7 +29,7 @@ docker-compose down
 ```
 
 ## Конфигурация
-Все настройки хранятся в файле `.env` (создайте его, если отсутствует):
+Все настройки хранятся в файле `.env`.
 
 ## API эндпоинты
 Реализованы согласно `schema.yaml`
@@ -61,9 +61,9 @@ golangci-lint run
 ```
 
 ## Нагрузочное тестирование
-Запуск тестов с **Yandex.Tank** (должен быть запущен контейнер):
+Запуск тестов с **k6** (должен быть запущен `docker-compose`):
 ```sh
-docker exec -it yandex_tank_container_name yandex-tank /config/load.yaml
+docker exec -it k6 k6 run /scripts/test.js
 ```
 ## Работа под нагрузкой
 Сервис поддерживает до **100k** сотрудников и обеспечивает **RPS — 1k**, **SLI времени ответа — 50 мс**, **SLI успешности — 99.99%**.
@@ -73,11 +73,6 @@ docker exec -it yandex_tank_container_name yandex-tank /config/load.yaml
 ![k6 test](misc/k6-stress-test.png)
 
 Скрипт, которым было проведено тестирование лежит в `tests/loadtest/test.js`
-
-Для запуска нагрузочного тестирования, после запуска docker-compose:
-```sh
-docker exec -it k6 k6 run /tests/loadtes/test.js 
-```
 
 ## Стек технологий
 - **Язык:** Go
