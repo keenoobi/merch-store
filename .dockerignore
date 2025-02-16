@@ -24,3 +24,5 @@
 token.sh
 
 migrations/
+
+schema.yaml

@@ -33,7 +33,7 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 
 	err := r.db.QueryRow(ctx, query, username).Scan(
 		&user.Name,
-		&user.PasswordHash,
+		&user.Password,
 		&user.Coins,
 	)
 
@@ -52,7 +52,7 @@ func (r *UserRepository) GetUserByUsername(ctx context.Context, username string)
 
 func (r *UserRepository) Create(ctx context.Context, user *entity.User) error {
 	query := `INSERT INTO users (username, password_hash, coins) VALUES ($1, $2, $3) RETURNING username`
-	err := r.db.QueryRow(ctx, query, user.Name, user.PasswordHash, user.Coins).Scan(&user.Name)
+	err := r.db.QueryRow(ctx, query, user.Name, user.Password, user.Coins).Scan(&user.Name)
 	if err != nil {
 		slog.Error("Failed to create user", "username", user.Name, "error", err)
 		return err

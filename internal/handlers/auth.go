@@ -16,6 +16,7 @@ func NewAuthHandler(authUseCase *usecase.AuthUseCase) *AuthHandler {
 	return &AuthHandler{authUseCase: authUseCase}
 }
 
+// TODO: добавить валидацию
 type AuthRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -25,7 +26,7 @@ func (h *AuthHandler) Authenticate(w http.ResponseWriter, r *http.Request) {
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Error("Invalid request", "error", err)
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		http.Error(w, "Invalid request", http.StatusBadRequest) // TODO: Изменить на возвращение JSON везде
 		return
 	}
 

@@ -21,14 +21,16 @@ import (
 
 func main() {
 	// Инициализация логгера
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelError,
+	}))
 	slog.SetDefault(logger)
 
 	// Загрузка конфигурации
 	cfg := config.LoadConfig()
 
 	// Подключаемся к БД
-	db, err := database.NewPostgresDB(cfg)
+	db, err := database.NewPostgresDB(cfg.DBConfig)
 	if err != nil {
 		slog.Error("Failed to connect to the database", "error", err)
 		os.Exit(1)

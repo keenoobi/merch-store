@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS transfer_history;
+DROP TABLE IF EXISTS inventory;
+DROP TABLE IF EXISTS merch_items;
+DROP TABLE IF EXISTS users;

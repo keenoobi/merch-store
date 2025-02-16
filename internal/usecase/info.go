@@ -2,17 +2,20 @@ package usecase
 
 import (
 	"avito-merch/internal/entity"
-	"avito-merch/internal/repository"
 	"context"
 	"fmt"
 )
 
-type InfoUseCase struct {
-	userRepo        *repository.UserRepository
-	transactionRepo *repository.TransactionRepository
+type TransactionRepository interface {
+	GetTransfersByUsername(ctx context.Context, username string) ([]entity.Transaction, error)
 }
 
-func NewInfoUseCase(userRepo *repository.UserRepository, transactionRepo *repository.TransactionRepository) *InfoUseCase {
+type InfoUseCase struct {
+	userRepo        UserRepository
+	transactionRepo TransactionRepository
+}
+
+func NewInfoUseCase(userRepo UserRepository, transactionRepo TransactionRepository) *InfoUseCase {
 	return &InfoUseCase{
 		userRepo:        userRepo,
 		transactionRepo: transactionRepo,

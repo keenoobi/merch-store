@@ -1,7 +1,6 @@
 package database
 
 import (
-	"avito-merch/internal/config"
 	"context"
 	"fmt"
 	"log/slog"
@@ -10,8 +9,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type Config struct {
+	DBUser     string
+	DBPassword string
+	DBHost     string
+	DBPort     string
+	DBName     string
+}
+
 // NewPostgresDB создаёт подключение к БД через pgx
-func NewPostgresDB(cfg *config.Config) (*pgxpool.Pool, error) {
+func NewPostgresDB(cfg Config) (*pgxpool.Pool, error) {
 	// Составляем строку для к Postgres
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
@@ -23,8 +30,8 @@ func NewPostgresDB(cfg *config.Config) (*pgxpool.Pool, error) {
 	}
 
 	// Устанавливаем параметры пула соединений
-	config.MaxConns = 10                        // Максимум 10 подключений
-	config.MinConns = 2                         // Минимум 2 подключения
+	config.MaxConns = 100                       // Максимум 10 подключений
+	config.MinConns = 10                        // Минимум 2 подключения
 	config.MaxConnLifetime = time.Hour          // Закрытие соединения через 1 час
 	config.HealthCheckPeriod = 30 * time.Second // Проверка соединений каждые 30 сек
 
