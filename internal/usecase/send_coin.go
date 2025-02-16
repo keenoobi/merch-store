@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type SendCoinUseCase struct {
@@ -31,7 +33,11 @@ func (uc *SendCoinUseCase) SendCoins(ctx context.Context, fromUsername string, t
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			slog.Error("rollback error")
+		}
+	}()
 
 	userRepo := repository.UserRepoWithTx(tx)
 	transactionRepo := repository.TransactionRepoWithTx(tx)

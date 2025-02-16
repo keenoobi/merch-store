@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockUserRepository - мок для UserRepository
 type MockUserRepository struct {
 	mock.Mock
 }
@@ -36,69 +35,57 @@ func (m *MockUserRepository) UpdateUserAfterPurchase(ctx context.Context, userna
 }
 
 func TestAuthUseCase_Authenticate_Success(t *testing.T) {
-	// Создаем мок UserRepository
 	mockUserRepo := new(MockUserRepository)
 
-	// Настраиваем ожидания
 	mockUserRepo.On("GetUserByUsername", mock.Anything, "testuser").
-		Return((*entity.User)(nil), nil) // Пользователь не найден
+		Return((*entity.User)(nil), nil)
 
 	mockUserRepo.On("Create", mock.Anything, &entity.User{
 		Name:     "testuser",
 		Password: "password",
-		Coins:    10000000,
+		Coins:    1000,
 	}).
-		Return(nil) // Успешное создание пользователя
+		Return(nil)
 
-	// Создаем usecase с моком
 	uc := NewAuthUseCase(mockUserRepo)
 
 	ctx := context.Background()
 	username := "testuser"
 	password := "password"
 
-	// Вызываем метод Authenticate
 	user, err := uc.Authenticate(ctx, username, password)
 
-	// Проверяем результат
 	assert.NoError(t, err)
 	assert.Equal(t, username, user.Name)
 	assert.Equal(t, password, user.Password)
-	assert.Equal(t, 10000000, user.Coins)
+	assert.Equal(t, 1000, user.Coins)
 
-	// Проверяем, что методы были вызваны
 	mockUserRepo.AssertExpectations(t)
 }
 
 func TestAuthUseCase_Authenticate_CreateUserError(t *testing.T) {
-	// Создаем мок UserRepository
 	mockUserRepo := new(MockUserRepository)
 
-	// Настраиваем ожидания
 	mockUserRepo.On("GetUserByUsername", mock.Anything, "testuser").
-		Return((*entity.User)(nil), nil) // Пользователь не найден
+		Return((*entity.User)(nil), nil)
 
 	mockUserRepo.On("Create", mock.Anything, &entity.User{
 		Name:     "testuser",
 		Password: "password",
-		Coins:    10000000,
+		Coins:    1000,
 	}).
-		Return(errors.New("database error")) // Ошибка при создании пользователя
+		Return(errors.New("database error"))
 
-	// Создаем usecase с моком
 	uc := NewAuthUseCase(mockUserRepo)
 
 	ctx := context.Background()
 	username := "testuser"
 	password := "password"
 
-	// Вызываем метод Authenticate
 	user, err := uc.Authenticate(ctx, username, password)
 
-	// Проверяем результат
 	assert.Error(t, err)
 	assert.Nil(t, user)
 
-	// Проверяем, что методы были вызваны
 	mockUserRepo.AssertExpectations(t)
 }

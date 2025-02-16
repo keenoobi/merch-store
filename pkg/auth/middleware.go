@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"avito-merch/internal/utils"
 	"avito-merch/pkg/context"
 	"net/http"
 	"strings"
@@ -8,16 +9,17 @@ import (
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := ParseToken(tokenString)
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			utils.WriteError(w, http.StatusUnauthorized, "Invalid token")
 			return
 		}
 

@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockTransactionRepository - мок для TransactionRepository
 type MockTransactionRepository struct {
 	mock.Mock
 }
@@ -20,11 +19,9 @@ func (m *MockTransactionRepository) GetTransfersByUsername(ctx context.Context, 
 }
 
 func TestInfoUseCase_GetUserInfo_Success(t *testing.T) {
-	// Создаем моки
 	mockUserRepo := new(MockUserRepository)
 	mockTransactionRepo := new(MockTransactionRepository)
 
-	// Настраиваем ожидания
 	mockUserRepo.On("GetUserByUsername", mock.Anything, "testuser").
 		Return(&entity.User{
 			Name:  "testuser",
@@ -42,23 +39,19 @@ func TestInfoUseCase_GetUserInfo_Success(t *testing.T) {
 			{FromUser: "testuser", ToUser: "user2", Amount: 50},
 		}, nil)
 
-	// Создаем usecase с моками
 	uc := NewInfoUseCase(mockUserRepo, mockTransactionRepo)
 
 	ctx := context.Background()
 	username := "testuser"
 
-	// Вызываем метод GetUserInfo
 	info, err := uc.GetUserInfo(ctx, username)
 
-	// Проверяем результат
 	assert.NoError(t, err)
 	assert.Equal(t, 1000, info.Coins)
 	assert.Equal(t, 1, len(info.Inventory))
 	assert.Equal(t, 1, len(info.CoinHistory.Received))
 	assert.Equal(t, 1, len(info.CoinHistory.Sent))
 
-	// Проверяем, что методы были вызваны
 	mockUserRepo.AssertExpectations(t)
 	mockTransactionRepo.AssertExpectations(t)
 }

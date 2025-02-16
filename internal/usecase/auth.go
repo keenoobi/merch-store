@@ -6,6 +6,8 @@ import (
 	"log/slog"
 )
 
+const coins = 1000
+
 type UserRepository interface {
 	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
 	Create(ctx context.Context, user *entity.User) error
@@ -31,7 +33,7 @@ func (uc *AuthUseCase) Authenticate(ctx context.Context, username, password stri
 		user = &entity.User{
 			Name:     username,
 			Password: password,
-			Coins:    10000000, // TODO: Вынести в кофиг, или просто const?
+			Coins:    coins,
 		}
 		if err := uc.userRepo.Create(ctx, user); err != nil {
 			slog.Error("Failed to create user", "username", username, "error", err)

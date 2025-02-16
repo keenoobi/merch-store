@@ -1,0 +1,23 @@
+linters:
+  enable:
+    - errcheck           
+    - govet              
+    - staticcheck                             
+    - unused             
+    - gocyclo            
+    - goimports          
+
+  disable:
+    - dupl               
+
+issues:
+  exclude:
+    - "Error return value is not checked" 
+  exclude-dirs:
+    - "tests"  
+  max-same-issues: 3 
+  exclude-use-default: false 
+
+
+run:  
+  timeout: 5m     

@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type BuyUseCase struct {
@@ -24,7 +26,11 @@ func (uc *BuyUseCase) BuyItem(ctx context.Context, userName string, itemName str
 		slog.Error("Failed to begin transaction", "error", err)
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			slog.Error("rollback error")
+		}
+	}()
 
 	userRepo := repository.UserRepoWithTx(tx)
 	itemRepo := repository.ItemRepoWithTx(tx)
@@ -41,7 +47,6 @@ func (uc *BuyUseCase) BuyItem(ctx context.Context, userName string, itemName str
 	}
 
 	// Обновляем баланс пользователя с проверкой
-
 	if err := userRepo.UpdateUserAfterPurchase(ctx, userName, item.Price); err != nil {
 		slog.Error("Failed to update user balance", "userName", userName, "error", err)
 		return fmt.Errorf("failed to update user balance: %w", err)

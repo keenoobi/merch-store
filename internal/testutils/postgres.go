@@ -22,10 +22,7 @@ const (
 )
 
 // StartPostgresContainer запускает контейнер с PostgreSQL и применяет миграции.
-// Возвращает строку подключения (DSN) и функцию для остановки контейнера.
 func StartPostgresContainer(ctx context.Context) (string, func(), error) {
-	// Устанавливаем значение по умолчанию для образа PostgreSQL
-
 	// Запускаем контейнер с PostgreSQL
 	postgresContainer, err := postgres.Run(ctx,
 		"postgres:13-alpine",
@@ -42,16 +39,14 @@ func StartPostgresContainer(ctx context.Context) (string, func(), error) {
 		return "", nil, fmt.Errorf("failed to start PostgreSQL container: %w", err)
 	}
 
-	// Получаем строку подключения
 	dsn, err := postgresContainer.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to get connection string: %w", err)
 	}
 
-	// Применяем миграции
 	m, err := migrate.New(
-		fmt.Sprintf("file://%s", MigrationsPath), // Путь к папке с миграциями
-		dsn,                                      // URL базы данных
+		fmt.Sprintf("file://%s", MigrationsPath),
+		dsn,
 	)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create migrate instance: %w", err)

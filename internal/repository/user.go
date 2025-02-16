@@ -74,13 +74,13 @@ func (r *UserRepository) UpdateUserAfterTransfer(ctx context.Context, fromUserna
 		WHERE username IN ($1, $2);`
 	result, err := r.db.Exec(ctx, query, fromUsername, toUsername, amount)
 	if err != nil {
-		return fmt.Errorf("failed to update balances: %w", err)
+		return fmt.Errorf("insufficient coins")
 	}
 
 	// Проверяем, что обновление действительно произошло
 	rowsAffected := result.RowsAffected()
 	if rowsAffected != 2 {
-		return fmt.Errorf("expected 2 rows to be updated, got %d", rowsAffected)
+		return fmt.Errorf("recipient does not exist")
 	}
 
 	slog.Info("User coins successfully updated", "FromUser", fromUsername, "ToUser", toUsername)

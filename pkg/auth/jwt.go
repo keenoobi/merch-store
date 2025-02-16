@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -9,11 +10,11 @@ import (
 
 var (
 	ErrInvalidToken = errors.New("invalid token")
-	secretKey       = []byte("secret-key") // TODO:Заменить на реальный секретный ключ!!!
+	secretKey       = []byte(os.Getenv("SECRET_JWT_KEY"))
 )
 
 type Claims struct {
-	Username string `json:"user_name"`
+	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -22,7 +23,7 @@ func GenerateToken(userName string) (string, error) {
 	claims := Claims{
 		Username: userName,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // TODO:Заменить магическое число 24!!!
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

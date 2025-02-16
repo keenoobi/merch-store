@@ -51,10 +51,20 @@ func (uc *InfoUseCase) GetUserInfo(ctx context.Context, username string) (*entit
 		},
 	}
 
+	if info.Inventory == nil {
+		info.Inventory = []entity.InventoryItem{}
+	}
+
+	if info.CoinHistory.Received == nil {
+		info.CoinHistory.Received = []entity.Transaction{}
+	}
+	if info.CoinHistory.Sent == nil {
+		info.CoinHistory.Sent = []entity.Transaction{}
+	}
+
 	return info, nil
 }
 
-// filterReceivedTransactions фильтрует полученные транзакции
 func (uc *InfoUseCase) filterReceivedTransactions(transactions []entity.Transaction, username string) []entity.Transaction {
 	var received []entity.Transaction
 	for _, tx := range transactions {
@@ -68,7 +78,6 @@ func (uc *InfoUseCase) filterReceivedTransactions(transactions []entity.Transact
 	return received
 }
 
-// filterSentTransactions фильтрует отправленные транзакции
 func (uc *InfoUseCase) filterSentTransactions(transactions []entity.Transaction, username string) []entity.Transaction {
 	var sent []entity.Transaction
 	for _, tx := range transactions {
