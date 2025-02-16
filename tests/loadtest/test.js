@@ -7,42 +7,42 @@ export let options = {
         // Этап создания пользователей
         create_users: {
             executor: 'shared-iterations',
-            vus: 1,                // 1000 виртуальных пользователей
-            iterations: 100000,       // 100 000 итераций (по одной на пользователя)
-            maxDuration: '5m',        // Максимальная длительность этапа
-            exec: 'createUser',       // Функция для создания пользователей
+            vus: 1,
+            iterations: 100000,
+            maxDuration: '5m',
+            exec: 'createUser',
         },
         // Этап покупок
         purchase: {
             executor: 'constant-arrival-rate',
-            startTime: '2m',          // Начинаем после создания пользователей
-            rate: 1000,               // 1000 RPS
+            startTime: '2m',
+            rate: 1000,
             timeUnit: '1s',
-            duration: '1m',           // Длительность этапа — 1 минута
+            duration: '1m',
             preAllocatedVUs: 1000,
             maxVUs: 100000,
-            exec: 'purchaseItem',     // Функция для покупок
+            exec: 'purchaseItem',
         },
         // Этап передачи монет
         send_coins: {
             executor: 'constant-arrival-rate',
-            startTime: '3m',          // Начинаем после этапа покупок
-            rate: 1000,               // 1000 RPS
+            startTime: '3m',
+            rate: 1000,
             timeUnit: '1s',
-            duration: '1m',           // Длительность этапа — 2 минуты
+            duration: '1m',
             preAllocatedVUs: 1000,
             maxVUs: 100000,
-            exec: 'sendCoins',        // Функция для передачи монет
+            exec: 'sendCoins',
         },
         get_info: {
             executor: 'constant-arrival-rate',
-            startTime: '4m',          // Начинаем после этапа покупок
-            rate: 1000,               // 1000 RPS
+            startTime: '4m',
+            rate: 1000,
             timeUnit: '1s',
-            duration: '1m',           // Длительность этапа — 2 минуты
+            duration: '1m',
             preAllocatedVUs: 1000,
             maxVUs: 100000,
-            exec: 'getInfo',        // Функция для передачи монет
+            exec: 'getInfo',
         },
     },
     thresholds: {
@@ -55,7 +55,7 @@ export let options = {
 export function createUser() {
     let username = `user${__ITER}`; // Уникальный username
 
-    let authRes = http.post('http://localhost:8080/api/auth', JSON.stringify({
+    let authRes = http.post('http://avito-shop-service:8080/api/auth', JSON.stringify({
         username: username,
         password: 'testpass',
     }), {
@@ -68,7 +68,7 @@ export function createUser() {
 // Функция для покупок
 export function purchaseItem() {
     // Авторизация
-    let authRes = http.post('http://localhost:8080/api/auth', JSON.stringify({
+    let authRes = http.post('http://avito-shop-service:8080/api/auth', JSON.stringify({
         username: `user${randomIntBetween(0, 9999)}`,
         password: 'testpass',
     }), {
@@ -83,7 +83,7 @@ export function purchaseItem() {
     let items = ['t-shirt', 'cup', 'book', 'pen', 'powerbank', 'hoody', 'umbrella', 'socks', 'wallet', 'pink-hoody'];
     let item = items[randomIntBetween(0, items.length - 1)];
 
-    let buyRes = http.get(`http://localhost:8080/api/buy/${item}`, {
+    let buyRes = http.get(`http://avito-shop-service:8080/api/buy/${item}`, {
         headers: { 'Authorization': `Bearer ${token}` },
     });
 
@@ -93,7 +93,7 @@ export function purchaseItem() {
 // Функция для передачи монет
 export function sendCoins() {
     // Авторизация
-    let authRes = http.post('http://localhost:8080/api/auth', JSON.stringify({
+    let authRes = http.post('http://avito-shop-service:8080/api/auth', JSON.stringify({
         username: `user${randomIntBetween(0, 49999)}`,
         password: 'testpass',
     }), {
@@ -105,7 +105,7 @@ export function sendCoins() {
     let token = authRes.json().token;
 
     // Отправка монет
-    let sendCoinRes = http.post('http://localhost:8080/api/sendCoin', JSON.stringify({
+    let sendCoinRes = http.post('http://avito-shop-service:8080/api/sendCoin', JSON.stringify({
         toUser: `user${randomIntBetween(50000, 99999)}`,
         amount: randomIntBetween(1, 100),
     }), {
@@ -120,7 +120,7 @@ export function sendCoins() {
 
 export function getInfo() {
     // Авторизация
-    let authRes = http.post('http://localhost:8080/api/auth', JSON.stringify({
+    let authRes = http.post('http://avito-shop-service:8080/api/auth', JSON.stringify({
         username: `user${randomIntBetween(0, 99999)}`,
         password: 'testpass',
     }), {
@@ -132,7 +132,7 @@ export function getInfo() {
     let token = authRes.json().token;
 
     // Информация о пользователе
-    let userInfo = http.get(`http://localhost:8080/api/info`, {
+    let userInfo = http.get(`http://avito-shop-service:8080/api/info`, {
         headers: { 'Authorization': `Bearer ${token}` },
     });
 

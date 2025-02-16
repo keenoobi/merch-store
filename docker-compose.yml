@@ -32,8 +32,9 @@ services:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
+    # Не хватало соединений, решил добавить
     command: >
-      postgres -c max_connections=500      
+      postgres -c max_connections=200   
     volumes:
       - ./migrations/001_init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
@@ -52,7 +53,7 @@ services:
     container_name: k6
     entrypoint: [ "sleep", "infinity" ] # Контейнер остается запущенным
     volumes:
-      - ./scripts:/scripts # Примонтировать папку со скриптами
+      - ./tests/loadtest:/scripts
     depends_on:
       - avito-shop-service
     networks:
