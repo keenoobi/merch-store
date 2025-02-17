@@ -50,13 +50,15 @@ func NewApp(cfg *config.Config) *App {
 	infoUseCase := usecase.NewInfoUseCase(userRepo, transactionRepo)
 
 	// Инициализируем handlers
-	authHandler := handlers.NewAuthHandler(authUseCase)
-	buyHandler := handlers.NewBuyHandler(buyUseCase)
-	sendCoinHandler := handlers.NewSendCoinHandler(sendCoinUseCase)
-	infoHandler := handlers.NewInfoHandler(infoUseCase)
+	handlers := &Handlers{
+		authHandler:     handlers.NewAuthHandler(authUseCase),
+		buyHandler:      handlers.NewBuyHandler(buyUseCase),
+		sendCoinHandler: handlers.NewSendCoinHandler(sendCoinUseCase),
+		infoHandler:     handlers.NewInfoHandler(infoUseCase),
+	}
 
 	// Настраиваем роутер
-	router := setupRouter(authHandler, buyHandler, sendCoinHandler, infoHandler)
+	router := setupRouter(handlers)
 
 	// Инициализируем сервер
 	server := &http.Server{

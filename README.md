@@ -19,13 +19,13 @@ cd avito_test_assignment
 
 ### 2. Запуск через Docker Compose
 ```sh
-docker-compose up --build
+docker compose up --build
 ```
 После этого API будет доступно по адресу `http://localhost:8080`.
 
 ### 3. Остановка контейнеров
 ```sh
-docker-compose down
+docker compose down
 ```
 
 ## Конфигурация
