@@ -1,5 +1,3 @@
-# avito_test_assignment
-
 # Магазин мерча
 
 ## Описание
