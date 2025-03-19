@@ -11,8 +11,8 @@
 
 ### 1. Клонирование репозитория
 ```sh
-git clone https://github.com/keenoobi/avito_test_assignment.git
-cd avito_test_assignment 
+git clone https://github.com/keenoobi/merch-store.git
+cd merch-store
 ```
 
 ### 2. Запуск через Docker Compose
